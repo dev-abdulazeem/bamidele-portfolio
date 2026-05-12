@@ -16,6 +16,8 @@ import experienceRoutes from './routes/experienceRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { protect } from './middleware/auth';
 import sequelize from './config/database';
+import User from './models/User'; // ← ADDED: For seeding admin
+import bcrypt from 'bcryptjs';   // ← ADDED: For seeding admin
 
 dotenv.config();
 
@@ -27,24 +29,21 @@ const PORT = process.env.PORT || 5000;
 // ALLOWED ORIGINS
 // ============================================
 const allowedOrigins = [
-  'http://localhost:5173',                              // Local dev
-  'https://bamidele-portfolio-theta.vercel.app',        // Production frontend
+  'http://localhost:5173',
+  'https://bamidele-portfolio-theta.vercel.app',
 ];
 
-// Optional: add more from env variable (comma-separated)
 if (process.env.ALLOWED_ORIGINS) {
   const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
   allowedOrigins.push(...envOrigins);
 }
 
 // ============================================
-// CORS
+// CORS — FIXED for cross-domain cookies
 // ============================================
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -52,7 +51,7 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'), false);
     }
   },
-  credentials: true,
+  credentials: true,           // REQUIRED for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
@@ -132,7 +131,6 @@ app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Res
       return;
     }
 
-    // Railway fix: use forwarded headers for correct protocol/host
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
     const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
@@ -156,7 +154,12 @@ app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Res
 // HEALTH CHECK
 // ============================================
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Bamidele Portfolio API is running!' });
+  res.json({ 
+    status: 'OK', 
+    message: 'Bamidele Portfolio API is running!',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // ============================================
@@ -164,6 +167,29 @@ app.get('/api/health', (req, res) => {
 // ============================================
 app.use(notFound);
 app.use(errorHandler);
+
+// ============================================
+// SEED ADMIN USER — AUTO-CREATES ON STARTUP
+// ============================================
+const seedAdminUser = async () => {
+  try {
+    const existingAdmin = await User.findOne({ where: { email: 'admin@bamidele.dev' } });
+    
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
+        email: 'admin@bamidele.dev',
+        password: hashedPassword,
+        role: 'admin'
+      });
+      console.log('✅ Admin user seeded: admin@bamidele.dev / admin123');
+    } else {
+      console.log('ℹ️ Admin user already exists');
+    }
+  } catch (error) {
+    console.error('❌ Admin seed failed:', error);
+  }
+};
 
 // ============================================
 // START SERVER
@@ -176,10 +202,14 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log('✅ Tables synced');
 
+    // Seed admin user after tables are ready
+    await seedAdminUser();
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
-      console.log(`📁 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`📂 Uploads directory: ${uploadDir}`);
+      console.log(`🌐 Allowed origins: ${allowedOrigins.join(', ')}`);
     });
   } catch (error) {
     console.error('❌ Database connection failed:', error);

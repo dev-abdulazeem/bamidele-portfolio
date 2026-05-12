@@ -60,10 +60,12 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
     const token = generateToken({ id: user.id, email: user.email, role: user.role });
 
+    // FIXED: Cross-domain cookie settings for Vercel ↔ Railway
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000
+      secure: true,           // Always true for Railway (HTTPS)
+      sameSite: 'none',       // REQUIRED for cross-domain cookies
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
     res.status(200).json({
