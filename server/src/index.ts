@@ -15,24 +15,54 @@ import messageRoutes from './routes/messageRoutes';
 import experienceRoutes from './routes/experienceRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { protect } from './middleware/auth';
-import sequelize from './config/database'; // ← ADDED: Database connection
+import sequelize from './config/database';
 
 dotenv.config();
 
 const app: Application = express();
 
+const PORT = process.env.PORT || 5000;
+
+// ============================================
+// ALLOWED ORIGINS
+// ============================================
+const allowedOrigins = [
+  'http://localhost:5173',                              // Local dev
+  'https://bamidele-portfolio-theta.vercel.app',        // Production frontend
+];
+
+// Optional: add more from env variable (comma-separated)
+if (process.env.ALLOWED_ORIGINS) {
+  const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim());
+  allowedOrigins.push(...envOrigins);
+}
+
+// ============================================
 // CORS
+// ============================================
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`Blocked CORS request from: ${origin}`);
+      callback(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// Security
+// ============================================
+// SECURITY
+// ============================================
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
 }));
 
 app.use(morgan('dev'));
@@ -40,13 +70,14 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Uploads directory
+// ============================================
+// UPLOADS
+// ============================================
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -70,21 +101,30 @@ const upload = multer({
   },
 });
 
-// Static files
+// ============================================
+// STATIC FILES
+// ============================================
 app.use('/uploads', (req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
+  const origin = req.headers.origin || '';
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 }, express.static(uploadDir));
 
-// Routes
+// ============================================
+// ROUTES
+// ============================================
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/experiences', experienceRoutes);
 
-// Upload route
+// ============================================
+// UPLOAD ROUTE
+// ============================================
 app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -92,8 +132,9 @@ app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Res
       return;
     }
 
-    const protocol = req.protocol;
-    const host = req.get('host') || `localhost:${process.env.PORT || 5000}`;
+    // Railway fix: use forwarded headers for correct protocol/host
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`;
     const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     console.log('✅ Image uploaded:', imageUrl);
@@ -111,18 +152,22 @@ app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Res
   }
 });
 
-// Health check
+// ============================================
+// HEALTH CHECK
+// ============================================
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Bamidele Portfolio API is running!' });
 });
 
-// Error handling
+// ============================================
+// ERROR HANDLING
+// ============================================
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-
-// ← CHANGED: Database-first startup
+// ============================================
+// START SERVER
+// ============================================
 const startServer = async () => {
   try {
     await sequelize.authenticate();
