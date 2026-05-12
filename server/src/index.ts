@@ -15,12 +15,13 @@ import messageRoutes from './routes/messageRoutes';
 import experienceRoutes from './routes/experienceRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { protect } from './middleware/auth';
+import sequelize from './config/database'; // ← ADDED: Database connection
 
 dotenv.config();
 
 const app: Application = express();
 
-// IMPORTANT: CORS must come BEFORE other middleware
+// CORS
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -28,10 +29,10 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Security middleware - configure helmet to allow cross-origin resources
+// Security
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' }, // ← ALLOWS IMAGES FROM DIFFERENT ORIGIN
-  crossOriginEmbedderPolicy: false // ← DISABLES COEP THAT BLOCKS IMAGES
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginEmbedderPolicy: false
 }));
 
 app.use(morgan('dev'));
@@ -39,13 +40,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Create uploads directory
+// Uploads directory
 const uploadDir = path.join(__dirname, '../uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure local storage for multer
+// Multer storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -69,7 +70,7 @@ const upload = multer({
   },
 });
 
-// Serve uploaded files statically WITH CORS HEADERS
+// Static files
 app.use('/uploads', (req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:5173');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -83,7 +84,7 @@ app.use('/api/skills', skillRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/experiences', experienceRoutes);
 
-// Upload route — LOCAL STORAGE
+// Upload route
 app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -91,13 +92,11 @@ app.post('/api/upload', protect, upload.single('image'), (req: Request, res: Res
       return;
     }
 
-    // Build full URL properly
     const protocol = req.protocol;
     const host = req.get('host') || `localhost:${process.env.PORT || 5000}`;
     const imageUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
 
     console.log('✅ Image uploaded:', imageUrl);
-    console.log('📁 Saved to:', req.file.path);
 
     res.status(200).json({
       success: true,
@@ -123,8 +122,24 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📁 Environment: ${process.env.NODE_ENV}`);
-  console.log(`📂 Uploads directory: ${uploadDir}`);
-});
+// ← CHANGED: Database-first startup
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('✅ Database connected to Neon');
+
+    await sequelize.sync({ alter: true });
+    console.log('✅ Tables synced');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📁 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📂 Uploads directory: ${uploadDir}`);
+    });
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
