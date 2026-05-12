@@ -32,3 +32,9 @@ client/dist/
 # Uploads (local image storage)
 uploads/
 server/uploads/
+
+# Dependencies
+node_modules/
+*/node_modules/
+server/node_modules/
+client/node_modules/
