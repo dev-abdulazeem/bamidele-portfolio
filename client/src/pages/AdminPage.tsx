@@ -13,7 +13,6 @@ import {
   Lock,
   Loader2,
   X,
-  Image,
   Upload,
   ExternalLink,
   Check,
@@ -25,11 +24,19 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 
-// ==================== CUSTOM ICONS ====================
+// ==================== CUSTOM ICONS (Preserved from your original) ====================
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/>
     <path d="M9 18c-4.51 2-5-2-7-2"/>
+  </svg>
+);
+
+const ImageIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+    <circle cx="9" cy="9" r="2"/>
+    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
   </svg>
 );
 
@@ -241,12 +248,14 @@ const AdminPage = () => {
       return;
     }
 
+    // Show preview immediately using FileReader
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
+    // Upload to server
     setIsUploading(true);
     try {
       const uploadData = new FormData();
@@ -729,14 +738,13 @@ const AdminPage = () => {
                                       if (parent) {
                                         const fallback = document.createElement('div');
                                         fallback.className = 'w-full h-full flex items-center justify-center text-gray-600';
-                                        fallback.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
                                         parent.appendChild(fallback);
                                       }
                                     }}
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                    <Image className="w-8 h-8" />
+                                    <ImageIcon className="w-8 h-8" />
                                   </div>
                                 )}
                                 {project.featured && (
