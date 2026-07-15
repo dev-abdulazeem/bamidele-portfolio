@@ -9,8 +9,8 @@
   
   body {
     font-family: 'Inter', system-ui, sans-serif;
-    background-color: #0f172a;
-    color: white;
+   
+    color: #f0f0f0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -18,49 +18,45 @@
 
 @layer components {
   .glass {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .gradient-text {
-    background: linear-gradient(to right, #60a5fa, #2563eb);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
   
   .btn-primary {
-    padding: 0.75rem 1.5rem;
-    background-color: #2563eb;
-    color: white;
+    padding: 0.875rem 2rem;
+    background-color: #f0f0f0;
+    color: #1a1f2e;
     font-weight: 500;
-    border-radius: 0.5rem;
-    transition: all 0.3s;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+    letter-spacing: -0.01em;
   }
   
   .btn-primary:hover {
-    background-color: #1d4ed8;
-    transform: scale(1.05);
-    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.25);
+    background-color: #ffffff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(255, 255, 255, 0.06);
   }
   
   .btn-outline {
-    padding: 0.75rem 1.5rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white;
+    padding: 0.875rem 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888888;
     font-weight: 500;
-    border-radius: 0.5rem;
-    transition: all 0.3s;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+    letter-spacing: -0.01em;
   }
   
   .btn-outline:hover {
-    border-color: #3b82f6;
-    background-color: rgba(59, 130, 246, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #f0f0f0;
+    background-color: rgba(255, 255, 255, 0.03);
   }
   
   .section-padding {
-    padding: 5rem 1rem;
+    padding: 6rem 1rem;
   }
   
   @media (min-width: 640px) {
@@ -79,21 +75,21 @@
   
   @media (min-width: 1280px) {
     .section-padding {
-      padding-left: 3rem;
-      padding-right: 3rem;
+      padding-left: 4rem;
+      padding-right: 4rem;
     }
   }
   
   .card {
-    background-color: rgba(30, 41, 59, 0.5);
+    background-color: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 0.75rem;
+    border-radius: 1rem;
     padding: 1.5rem;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
   }
   
   .card:hover {
-    border-color: rgba(59, 130, 246, 0.3);
-    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.03);
   }
 }
