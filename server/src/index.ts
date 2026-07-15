@@ -9,6 +9,7 @@ import path from 'path';
 import fs from 'fs';
 
 import authRoutes from './routes/authRoutes';
+import userRoutes from './routes/userRoutes';
 import projectRoutes from './routes/projectRoutes';
 import skillRoutes from './routes/skillRoutes';
 import messageRoutes from './routes/messageRoutes';
@@ -120,6 +121,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/experiences', experienceRoutes);
+app.use('/api/users', userRoutes);
 
 // ============================================
 // UPLOAD ROUTE
