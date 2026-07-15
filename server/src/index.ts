@@ -17,8 +17,8 @@ import experienceRoutes from './routes/experienceRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { protect } from './middleware/auth';
 import sequelize from './config/database';
-import User from './models/User'; // ← ADDED: For seeding admin
-import bcrypt from 'bcryptjs';   // ← ADDED: For seeding admin
+import User from './models/User';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -40,7 +40,7 @@ if (process.env.ALLOWED_ORIGINS) {
 }
 
 // ============================================
-// CORS — FIXED for cross-domain cookies
+// CORS
 // ============================================
 app.use(cors({
   origin: (origin, callback) => {
@@ -52,7 +52,7 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'), false);
     }
   },
-  credentials: true,           // REQUIRED for cookies
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
@@ -117,11 +117,11 @@ app.use('/uploads', (req, res, next) => {
 // ROUTES
 // ============================================
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/skills', skillRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/experiences', experienceRoutes);
-app.use('/api/users', userRoutes);
 
 // ============================================
 // UPLOAD ROUTE
@@ -171,7 +171,7 @@ app.use(notFound);
 app.use(errorHandler);
 
 // ============================================
-// SEED ADMIN USER — AUTO-CREATES ON STARTUP
+// SEED ADMIN USER
 // ============================================
 const seedAdminUser = async () => {
   try {
@@ -194,7 +194,7 @@ const seedAdminUser = async () => {
 };
 
 // ============================================
-// START SERVER
+// START SERVER (Local dev only)
 // ============================================
 const startServer = async () => {
   try {
@@ -204,7 +204,6 @@ const startServer = async () => {
     await sequelize.sync({ alter: true });
     console.log('✅ Tables synced');
 
-    // Seed admin user after tables are ready
     await seedAdminUser();
 
     app.listen(PORT, () => {
@@ -219,6 +218,16 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Only start server locally, NOT on Vercel
+if (process.env.NODE_ENV !== 'production') {
+  startServer();
+} else {
+  // On Vercel: just connect DB and seed
+  sequelize.authenticate()
+    .then(() => sequelize.sync({ alter: true }))
+    .then(() => seedAdminUser())
+    .then(() => console.log('✅ Vercel server ready'))
+    .catch((err) => console.error('❌ DB error:', err));
+}
 
 export default app;
